@@ -1,0 +1,149 @@
+{
+  "scope": {
+    "rows": 17431,
+    "clients": 29,
+    "features_window": "2026-03-01..2026-03-15",
+    "label_window": "2026-03-16..2026-03-31",
+    "label": "clicks_h2 < 0.8 * clicks_h1 (rows with clicks_h1 >= 5)"
+  },
+  "validation_grouped_by_client": {
+    "decline_rate_all_rows": 0.44220067695485055,
+    "roc_auc_logreg": 0.5858512637100084,
+    "roc_auc_baseline_low_impressions": 0.5488204905354179,
+    "fold_std_logreg": 0.03609226125710862,
+    "pr_auc_logreg": 0.513020560495264,
+    "top10pct_decline_rate": 0.5619266055045872
+  },
+  "cost_value_retrospective": {
+    "assumed_minutes_per_page": {
+      "1-human-review": 20,
+      "2-model-ranked": 10
+    },
+    "review_hours": 43.333333333333336,
+    "capacity": 200,
+    "lane1_share": 0.3,
+    "max_client_share": 0.25,
+    "by_lane": {
+      "1-human-review": {
+        "queued_pages": 60,
+        "mean_clicks_lost_queue": 46.233333333333334,
+        "mean_clicks_lost_random_same_lane": 14.099916666666665,
+        "declined_share_queue": 0.31666666666666665,
+        "declined_share_random_same_lane": 0.2967525195968645
+      },
+      "2-model-ranked": {
+        "queued_pages": 140,
+        "mean_clicks_lost_queue": 9.742857142857142,
+        "mean_clicks_lost_random_same_lane": 3.8134642857142853,
+        "declined_share_queue": 0.42142857142857143,
+        "declined_share_random_same_lane": 0.43026259147653895
+      }
+    }
+  },
+  "archetype_table": {
+    "HIGH_TRAFFIC": {
+      "pages": 893,
+      "decline_rate": 0.2968,
+      "mean_risk": 0.3331,
+      "median_clicks_h1": 80.0,
+      "median_change_ratio": 1.0,
+      "share_of_pages": 0.0512
+    },
+    "PAGE_ONE": {
+      "pages": 7916,
+      "decline_rate": 0.4267,
+      "mean_risk": 0.4164,
+      "median_clicks_h1": 14.0,
+      "median_change_ratio": 0.8889,
+      "share_of_pages": 0.4541
+    },
+    "STRIKING_DISTANCE": {
+      "pages": 1376,
+      "decline_rate": 0.4506,
+      "mean_risk": 0.4707,
+      "median_clicks_h1": 15.0,
+      "median_change_ratio": 0.8667,
+      "share_of_pages": 0.0789
+    },
+    "DEEP": {
+      "pages": 1362,
+      "decline_rate": 0.4927,
+      "mean_risk": 0.4564,
+      "median_clicks_h1": 14.0,
+      "median_change_ratio": 0.8,
+      "share_of_pages": 0.0781
+    },
+    "FLOOR_NOISE": {
+      "pages": 5884,
+      "decline_rate": 0.4714,
+      "mean_risk": 0.4811,
+      "median_clicks_h1": 6.0,
+      "median_change_ratio": 0.8,
+      "share_of_pages": 0.3376
+    }
+  },
+  "action_map": {
+    "HIGH_TRAFFIC": {
+      "action": "MANUAL_REVIEW_FIRST",
+      "lane": "1-human-review"
+    },
+    "PAGE_ONE": {
+      "action": "SNIPPET_AND_FRESHNESS_CHECK",
+      "lane": "2-model-ranked"
+    },
+    "STRIKING_DISTANCE": {
+      "action": "RELEVANCE_REFRESH",
+      "lane": "2-model-ranked"
+    },
+    "DEEP": {
+      "action": "CHECK_INDEXING_THEN_DECIDE",
+      "lane": "3-low-priority"
+    },
+    "FLOOR_NOISE": {
+      "action": "WATCH_NEXT_WINDOW",
+      "lane": "3-low-priority"
+    }
+  },
+  "reason_code_glossary": {
+    "HIGH_IMPRESSIONS": "high impressions in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "LOW_IMPRESSIONS": "low impressions in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "HIGH_CLICKS": "high clicks in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "LOW_CLICKS": "low clicks in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "HIGH_CTR": "high click-through rate in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "LOW_CTR": "low click-through rate in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "HIGH_POSITION": "high average position number (higher = lower on the page) in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "LOW_POSITION": "low average position number (higher = lower on the page) in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "HIGH_ACTIVE_DAYS": "high days with impressions in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "LOW_ACTIVE_DAYS": "low days with impressions in 1-15 March compared with other pages (the model reads this as higher decline risk)",
+    "NO_RISK_DRIVER": "no feature pushes this page's risk up"
+  },
+  "high_traffic_threshold_clicks_h1": 55.0,
+  "queue": {
+    "size": 200,
+    "by_action": {
+      "SNIPPET_AND_FRESHNESS_CHECK": 105,
+      "MANUAL_REVIEW_FIRST": 60,
+      "RELEVANCE_REFRESH": 35
+    },
+    "largest_client_share": 0.25
+  },
+  "monitoring_triggers_starting_values": {
+    "psi_impressions": 0.25,
+    "psi_score": 0.25,
+    "base_rate_shift": 0.1,
+    "min_gain_over_baseline": 0.01,
+    "max_client_share_queue": 0.4,
+    "max_reject_rate": 0.5
+  },
+  "no_go": [
+    "auto-publish or rewrite content",
+    "auto noindex / redirect / merge pages",
+    "client promises of recovery",
+    "reason codes treated as causes",
+    "judging writers, models or client accounts",
+    "scoring other months or new metrics without re-validation",
+    "acting on FLOOR_NOISE pages from this score",
+    "client names, URLs or queries in public outputs"
+  ],
+  "claim_language": "observed / measured / directional / decision-support; one month; not production"
+}
