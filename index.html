@@ -44,7 +44,7 @@ a{color:var(--accent)}
 <h2 id="data">2. Data</h2>
 <table>
 <tr><th>Item</th><th>Value</th></tr>
-<tr><td>Release</td><td>FlyRank ML Internship dataset (public warehouse on Hugging Face)</td></tr>
+<tr><td>Release</td><td>FlyRank ML Internship dataset (gated warehouse release on Hugging Face, read access by request)</td></tr>
 <tr><td>Table used</td><td><code>fact_content_daily_performance</code>, partition <code>month=2026-03</code>, only rows where search data was available</td></tr>
 <tr><td>Date windows</td><td>Features: 1&ndash;15 March 2026 (h1). Label: 16&ndash;31 March 2026 (h2)</td></tr>
 <tr><td>Unit of analysis</td><td>One page (content item) within one client, aggregated over each half-month</td></tr>
@@ -119,7 +119,7 @@ a{color:var(--accent)}
 <li><code>work/notebooks/w06_validation_audit.ipynb</code>: random vs grouped comparison, leakage audit, failure examples, claim rewrite</li>
 <li><code>work/notebooks/capstone.ipynb</code>: the paper&rsquo;s skeleton and artifacts</li>
 </ul>
-<p>The notebooks load the data from the public warehouse with a Hugging Face token stored as a Colab secret named <code>HF_TOKEN</code>. Random seeds are fixed (42). Charts in this paper are drawn from the numbers the notebooks print.</p>
+<p>The notebooks load the data from the public warehouse with a Hugging Face token stored as a Colab secret named <code>HF_TOKEN</code>. Random seeds are fixed (42). <code>capstone.ipynb</code> regenerates every number and chart in this paper and writes a small metrics file as its receipt.</p>
 
 <h2 id="ack">8. Acknowledgments &amp; data credit</h2>
 <p>Built on the FlyRank ML Internship dataset &mdash; <a href="https://flyrank.ai" target="_blank" rel="noopener">https://flyrank.ai</a>. Thanks to the FlyRank internship team for the data and the research paper that framed the questions.</p>
