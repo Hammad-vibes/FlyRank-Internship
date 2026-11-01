@@ -49,7 +49,7 @@ a{color:var(--accent)}
 <tr><td>Date windows</td><td>Features: 1&ndash;15 March 2026 (h1). Label: 16&ndash;31 March 2026 (h2)</td></tr>
 <tr><td>Unit of analysis</td><td>One page (content item) within one client, aggregated over each half-month</td></tr>
 <tr><td>March 2026 size</td><td>9,841,378 daily rows, 55 clients, 331,437 content items. Only 3,611,061 rows (about 36.7%) have Search Console data available (<code>IS TRUE</code>), so that is the slice used. Grain check: no duplicate (date, client, content) keys.</td></tr>
-<tr><td>Rows after filtering</td><td>About 17,000 pages across 29 clients (anonymised hash IDs only)</td></tr>
+<tr><td>Rows after filtering</td><td>17,431 pages across 29 clients (anonymised hash IDs only)</td></tr>
 <tr><td>Excluded &amp; why</td><td>Pages with fewer than 5 clicks in h1 (the decline ratio is too noisy for tiny counts); pages missing any feature value. Only 1 row had no h2 data at all.</td></tr>
 <tr><td>Base rate</td><td>44.2% of retained pages are labelled &ldquo;declined&rdquo;</td></tr>
 </table>
@@ -64,7 +64,7 @@ a{color:var(--accent)}
 <li><b>Models:</b> logistic regression on log-scaled features; decision tree (depth 3); histogram gradient boosting (depth 3, regularised). Simplest first, and a model counts as better only if it beats the baseline on the same split by more than fold-to-fold noise.</li>
 <li><b>Validation design:</b> 5-fold split <i>grouped by client</i>, so all pages of one client are either in training or in testing. A random split is shown next to it only as a comparison. Every method is scored on the same out-of-fold rows.</li>
 <li><b>Metrics:</b> ROC-AUC, PR-AUC (against the 0.442 base rate) and the decline rate among the top-10% flagged pages.</li>
-<li><b>Leakage checks:</b> (1) every feature is built only from days 1&ndash;15 and the code asserts the label and h2 columns are not features; (2) univariate AUC per feature, the highest being 0.549; (3) a shuffled-label test gave ROC-AUC 0.503, close to the 0.5 expected without leakage; (4) dropping the two click-based features that also appear in the label formula left grouped ROC-AUC unchanged (0.586 vs 0.586).</li>
+<li><b>Leakage checks:</b> (1) every feature is built only from days 1&ndash;15 and the code asserts the label and h2 columns are not features; (2) univariate AUC per feature, the highest being 0.549; (3) a shuffled-label test gave ROC-AUC 0.498, close to the 0.5 expected without leakage; (4) dropping the two click-based features that also appear in the label formula left grouped ROC-AUC unchanged (0.586 vs 0.586).</li>
 </ul>
 
 <h2 id="results">4. Results</h2>
@@ -72,7 +72,7 @@ a{color:var(--accent)}
 <tr><th>Method (grouped split)</th><th>ROC-AUC</th><th>Top-10% decline rate</th><th>Folds beating baseline</th></tr>
 <tr><td>Baseline (low impressions)</td><td>0.549</td><td>0.530</td><td>&mdash;</td></tr>
 <tr><td><b>Logistic regression</b></td><td><b>0.586</b></td><td><b>0.562</b></td><td>5 of 5</td></tr>
-<tr><td>Gradient boosting</td><td>0.567</td><td>0.533</td><td>4 of 5</td></tr>
+<tr><td>Gradient boosting</td><td>0.572</td><td>0.564</td><td>4 of 5</td></tr>
 <tr><td>Decision tree (depth 3)</td><td>0.554</td><td>0.514</td><td>3 of 5</td></tr>
 </table>
 <p>All pages together decline at 0.442, so that is the &ldquo;dumb guess&rdquo; for the top-10% column. Logistic regression&rsquo;s PR-AUC was 0.513 against 0.484 for the baseline. Its mean per-fold ROC-AUC gain over the baseline is +0.031, with fold standard deviations of roughly 0.03.</p>
@@ -80,7 +80,7 @@ a{color:var(--accent)}
 <figure><img src="assets/results_chart.png" alt="Bar chart of ROC-AUC for baseline and three models under a random split and a client-grouped split"><figcaption>Figure 1. Out-of-fold ROC-AUC. The random split scored higher than the honest grouped split for all three models, most for the flexible ones.</figcaption></figure>
 <figure><img src="assets/topk_chart.png" alt="Bar chart of decline rate among top 10 percent flagged pages"><figcaption>Figure 2. Of the 10% of pages each method flags, the share that really declined (all pages: 0.442).</figcaption></figure>
 
-<p><b>Interpretation.</b> Under the grouped split, logistic regression is the only model ahead of the baseline in every fold. Its advantage is positive but about the size of the fold noise, so I read it as small and directional. Logistic regression and gradient boosting (0.586 vs 0.567) are within that spread, so this evidence cannot separate them; I prefer logistic regression because its coefficients are readable. The random split was optimistic for every model (logistic regression 0.595 &rarr; 0.586, tree 0.587 &rarr; 0.554, gradient boosting 0.608 &rarr; 0.567). This is consistent with flexible models picking up client-specific patterns, but I did not test that explanation.</p>
+<p><b>Interpretation.</b> Under the grouped split, logistic regression is the only model ahead of the baseline in every fold. Its advantage is positive but about the size of the fold noise, so I read it as small and directional. Logistic regression and gradient boosting (0.586 vs 0.572) are within that spread, and on the top-10% decline rate they are essentially tied (0.562 vs 0.564), so this evidence cannot separate them; I prefer logistic regression because its coefficients are readable. The random split was optimistic for every model (logistic regression 0.595 &rarr; 0.586, tree 0.587 &rarr; 0.554, gradient boosting 0.610 &rarr; 0.572). This is consistent with flexible models picking up client-specific patterns, but I did not test that explanation.</p>
 <p><b>What the model leans on (one fold only).</b> In fold 0, permutation importance was highest for active days and impressions. In the logistic regression, more active days pointed toward decline and more impressions pointed away from it. This is a pattern in this month, not a cause.</p>
 
 <h3>Where the model is wrong</h3>
@@ -100,7 +100,7 @@ a{color:var(--accent)}
 <li><b>Noisy label near the floor.</b> Pages with 5&ndash;7 clicks dominate the flags. One possible explanation, not tested here, is that pages near the click floor tend to fall back.</li>
 <li><b>Client concentration.</b> A few clients make up a large share of the data and the flags.</li>
 <li><b>Missing information.</b> Features cannot see content age, seasonality or ranking changes.</li>
-<li><b>Audit limits.</b> The leakage checks find what I thought to look for; they do not prove nothing leaks. One gradient-boosting number from an earlier run did not reproduce on re-run, so this paper uses the re-run figures.</li>
+<li><b>Audit limits.</b> The leakage checks find what I thought to look for; they do not prove nothing leaks. Gradient boosting scores moved between my three runs (ROC-AUC 0.567 to 0.577 under the grouped split), so I do not treat its exact value as stable; this paper uses the figures from the final capstone notebook run.</li>
 </ul>
 
 <h2 id="recs">6. Ranked recommendations (action playbook)</h2>
