@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flagging Pages Likely to Lose Clicks: A Small, Honestly Validated Triage Model</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--muted:#555;--line:#ddd;--accent:#1d4ed8;--note:#fff7e0}
+@media (prefers-color-scheme:dark){:root{--bg:#121212;--fg:#eaeaea;--muted:#aaa;--line:#333;--accent:#7aa2ff;--note:#2a2410}}
+body{background:var(--bg);color:var(--fg);font:18px/1.65 Georgia,"Times New Roman",serif;margin:0}
+main{max-width:720px;margin:0 auto;padding:2rem 1.2rem 4rem}
+h1{font-size:2rem;line-height:1.2;margin-bottom:.3rem}
+h2{margin-top:2.5rem;border-bottom:1px solid var(--line);padding-bottom:.3rem;font-size:1.4rem}
+.meta{color:var(--muted);font-size:.95rem}
+nav{font:14px system-ui,sans-serif;border:1px solid var(--line);padding:.8rem 1rem;margin:1.5rem 0}
+nav a{color:var(--accent);margin-right:.8rem;white-space:nowrap}
+.abstract{border-left:4px solid var(--accent);padding:.2rem 1rem;background:rgba(127,127,127,.08)}
+.todo{background:var(--note);padding:.1rem .4rem;font-family:system-ui,sans-serif;font-size:.85em}
+table{border-collapse:collapse;width:100%;font:15px system-ui,sans-serif;display:block;overflow-x:auto}
+td,th{border:1px solid var(--line);padding:.4rem .6rem;text-align:left}
+figure{margin:1.5rem 0}img{max-width:100%;background:#fff;border:1px solid var(--line)}
+figcaption{font:14px system-ui,sans-serif;color:var(--muted)}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<h1>Flagging Pages Likely to Lose Clicks: A Small, Honestly Validated Triage Model</h1>
+<p class="meta">Hammad · FlyRank ML Internship (refresh / content opportunity scoring lane) · November 2026</p>
+
+<nav>
+<a href="#abstract">Abstract</a><a href="#intro">Introduction</a><a href="#data">Data</a><a href="#method">Methodology</a><a href="#results">Results</a><a href="#limits">Limitations</a><a href="#recs">Recommendations</a><a href="#repro">Reproducibility</a><a href="#ack">Acknowledgments</a>
+</nav>
+
+<h2 id="abstract">Abstract</h2>
+<div class="abstract">
+<p>Can early-month search data tell us which pages are likely to lose clicks in the second half of the month, so content refresh effort can start in the right place? I used the March 2026 slice of the FlyRank internship dataset, built five features from days 1&ndash;15, and defined &ldquo;decline&rdquo; as clicks in days 16&ndash;31 falling below 80% of clicks in days 1&ndash;15. I compared a simple baseline (rank pages by lowest early impressions) against logistic regression, a shallow decision tree and shallow gradient boosting, all scored on the same client-grouped 5-fold split. Logistic regression reached an out-of-fold ROC-AUC of 0.586 against 0.549 for the baseline, and was ahead in 5 of 5 folds, but the gain is about the size of the fold-to-fold spread and every model stays below 0.6. I read this as a small, directional improvement, useful as decision-support for where to look first, and not as a reliable predictor.</p>
+</div>
+
+<h2 id="intro">1. Introduction / Problem statement</h2>
+<p>Content teams cannot refresh every page at once. A useful first step is a short list of pages that look most at risk of losing traffic, so the first reviews go to the right place. This paper asks one narrow question: using only what we know by mid-month, can we rank pages so that the top of the list contains more true decliners than chance?</p>
+<p>The prediction target is binary: a page &ldquo;declines&rdquo; if its clicks in the second half of the month are below 80% of its clicks in the first half. The model never sees second-half data. The goal is triage, not causal claims about refreshing.</p>
+
+<h2 id="data">2. Data</h2>
+<table>
+<tr><th>Item</th><th>Value</th></tr>
+<tr><td>Release</td><td>FlyRank ML Internship dataset (public warehouse on Hugging Face)</td></tr>
+<tr><td>Table used</td><td><code>fact_content_daily_performance</code>, partition <code>month=2026-03</code>, only rows where search data was available</td></tr>
+<tr><td>Date windows</td><td>Features: 1&ndash;15 March 2026 (h1). Label: 16&ndash;31 March 2026 (h2)</td></tr>
+<tr><td>Unit of analysis</td><td>One page (content item) within one client, aggregated over each half-month</td></tr>
+<tr><td>March 2026 size</td><td>9,841,378 daily rows, 55 clients, 331,437 content items. Only 3,611,061 rows (about 36.7%) have Search Console data available (<code>IS TRUE</code>), so that is the slice used. Grain check: no duplicate (date, client, content) keys.</td></tr>
+<tr><td>Rows after filtering</td><td>About 17,000 pages across 29 clients (anonymised hash IDs only)</td></tr>
+<tr><td>Excluded &amp; why</td><td>Pages with fewer than 5 clicks in h1 (the decline ratio is too noisy for tiny counts); pages missing any feature value. Only 1 row had no h2 data at all.</td></tr>
+<tr><td>Base rate</td><td>44.2% of retained pages are labelled &ldquo;declined&rdquo;</td></tr>
+</table>
+<p>The course material describes the full dataset as about 79 million rows of real production search data; this paper uses only the single table and month above. Client and page identifiers are hashed in the source, and none appear here. No client names, URLs or search queries are used.</p>
+
+<h2 id="method">3. Methodology</h2>
+<ul>
+<li><b>Assumptions:</b> the first half of the month is a fair snapshot of what is known at prediction time; the 80% threshold is a reasonable definition of a meaningful decline; pages are comparable enough to share one model.</li>
+<li><b>Features (five, all from days 1&ndash;15):</b> impressions, clicks, click-through rate, average position, and number of active days (days with impressions above zero).</li>
+<li><b>Label:</b> decline = clicks in days 16&ndash;31 &lt; 0.8 &times; clicks in days 1&ndash;15. Pages with no h2 clicks count as declined (this affected 1 row).</li>
+<li><b>Baseline:</b> rank pages by lowest h1 impressions (fewer impressions = higher risk). It needs no training.</li>
+<li><b>Models:</b> logistic regression on log-scaled features; decision tree (depth 3); histogram gradient boosting (depth 3, regularised). Simplest first, and a model counts as better only if it beats the baseline on the same split by more than fold-to-fold noise.</li>
+<li><b>Validation design:</b> 5-fold split <i>grouped by client</i>, so all pages of one client are either in training or in testing. A random split is shown next to it only as a comparison. Every method is scored on the same out-of-fold rows.</li>
+<li><b>Metrics:</b> ROC-AUC, PR-AUC (against the 0.442 base rate) and the decline rate among the top-10% flagged pages.</li>
+<li><b>Leakage checks:</b> (1) every feature is built only from days 1&ndash;15 and the code asserts the label and h2 columns are not features; (2) univariate AUC per feature, the highest being 0.549; (3) a shuffled-label test gave ROC-AUC 0.503, close to the 0.5 expected without leakage; (4) dropping the two click-based features that also appear in the label formula left grouped ROC-AUC unchanged (0.586 vs 0.586).</li>
+</ul>
+
+<h2 id="results">4. Results</h2>
+<table>
+<tr><th>Method (grouped split)</th><th>ROC-AUC</th><th>Top-10% decline rate</th><th>Folds beating baseline</th></tr>
+<tr><td>Baseline (low impressions)</td><td>0.549</td><td>0.530</td><td>&mdash;</td></tr>
+<tr><td><b>Logistic regression</b></td><td><b>0.586</b></td><td><b>0.562</b></td><td>5 of 5</td></tr>
+<tr><td>Gradient boosting</td><td>0.567</td><td>0.533</td><td>4 of 5</td></tr>
+<tr><td>Decision tree (depth 3)</td><td>0.554</td><td>0.514</td><td>3 of 5</td></tr>
+</table>
+<p>All pages together decline at 0.442, so that is the &ldquo;dumb guess&rdquo; for the top-10% column. Logistic regression&rsquo;s PR-AUC was 0.513 against 0.484 for the baseline. Its mean per-fold ROC-AUC gain over the baseline is +0.031, with fold standard deviations of roughly 0.03.</p>
+
+<figure><img src="assets/results_chart.png" alt="Bar chart of ROC-AUC for baseline and three models under a random split and a client-grouped split"><figcaption>Figure 1. Out-of-fold ROC-AUC. The random split scored higher than the honest grouped split for all three models, most for the flexible ones.</figcaption></figure>
+<figure><img src="assets/topk_chart.png" alt="Bar chart of decline rate among top 10 percent flagged pages"><figcaption>Figure 2. Of the 10% of pages each method flags, the share that really declined (all pages: 0.442).</figcaption></figure>
+
+<p><b>Interpretation.</b> Under the grouped split, logistic regression is the only model ahead of the baseline in every fold. Its advantage is positive but about the size of the fold noise, so I read it as small and directional. Logistic regression and gradient boosting (0.586 vs 0.567) are within that spread, so this evidence cannot separate them; I prefer logistic regression because its coefficients are readable. The random split was optimistic for every model (logistic regression 0.595 &rarr; 0.586, tree 0.587 &rarr; 0.554, gradient boosting 0.608 &rarr; 0.567). This is consistent with flexible models picking up client-specific patterns, but I did not test that explanation.</p>
+<p><b>What the model leans on (one fold only).</b> In fold 0, permutation importance was highest for active days and impressions. In the logistic regression, more active days pointed toward decline and more impressions pointed away from it. This is a pattern in this month, not a cause.</p>
+
+<h3>Where the model is wrong</h3>
+<ul>
+<li>About 44% of flagged pages did not decline, and many true decliners are missed.</li>
+<li>Only about 54% of its flagged pages overlap with the baseline&rsquo;s flagged pages, so it picks different pages, not just the same ones.</li>
+<li>About 73% of flagged pages have only 5&ndash;7 h1 clicks, where one or two clicks can flip the label (Figure 3).</li>
+<li>58% of flagged rows come from the top three clients (26 of 29 clients have at least one flagged row), so results lean on a few clients.</li>
+</ul>
+<figure><img src="assets/error_chart.png" alt="Bar chart of the share of pages flagged in each h1 click band"><figcaption>Figure 3. Share of pages flagged by click band: 22% of pages with 5&ndash;7 clicks, falling to under 1% for 21+ clicks.</figcaption></figure>
+
+<h2 id="limits">5. Limitations &amp; honest framing</h2>
+<ul>
+<li><b>One month, one split inside it.</b> Features come from 1&ndash;15 March and the label from 16&ndash;31 March. This is not a test on a different month, so I cannot say the result holds in other periods.</li>
+<li><b>Weak absolute performance.</b> Every model has ROC-AUC under 0.6. The score is decision-support for where to look first, not a reliable predictor.</li>
+<li><b>Prediction, not cause.</b> Nothing here shows that refreshing a page changes its clicks.</li>
+<li><b>Noisy label near the floor.</b> Pages with 5&ndash;7 clicks dominate the flags. One possible explanation, not tested here, is that pages near the click floor tend to fall back.</li>
+<li><b>Client concentration.</b> A few clients make up a large share of the data and the flags.</li>
+<li><b>Missing information.</b> Features cannot see content age, seasonality or ranking changes.</li>
+<li><b>Audit limits.</b> The leakage checks find what I thought to look for; they do not prove nothing leaks. One gradient-boosting number from an earlier run did not reproduce on re-run, so this paper uses the re-run figures.</li>
+</ul>
+
+<h2 id="recs">6. Ranked recommendations (action playbook)</h2>
+<ol>
+<li><b>Use the logistic regression score only as a triage list.</b> Reviewing the top 10% gave a 56% decline rate versus 44% for all pages. That is a modest edge, so treat flagged pages as &ldquo;look first&rdquo;, not &ldquo;will decline&rdquo;. <i>Confidence: moderate, one month.</i></li>
+<li><b>Do not act on flags from 5&ndash;7-click pages alone.</b> They make up most flags and have the noisiest label; require a human look, or raise the click floor. <i>Confidence: moderate.</i></li>
+<li><b>Re-test on a different month before relying on it.</b> This is the biggest open question, and the cheapest next step. <i>Confidence this matters: high.</i></li>
+<li><b>Always validate grouped by client.</b> Random splits overstated every model here. <i>Confidence: high for this data.</i></li>
+<li><b>Try features the model cannot see today</b> (content age, last refresh date, seasonality) before trying more complex models, since gradient boosting added nothing over logistic regression. <i>Untested idea.</i></li>
+</ol>
+
+<h2 id="repro">7. Reproducibility</h2>
+<p>Repo: <a href="https://github.com/Hammad-vibes/FlyRank-Internship">github.com/Hammad-vibes/FlyRank-Internship</a></p>
+<ul>
+<li><code>work/notebooks/w05_model.ipynb</code>: method choice, grouped split, models vs baseline, error analysis</li>
+<li><code>work/notebooks/w06_validation_audit.ipynb</code>: random vs grouped comparison, leakage audit, failure examples, claim rewrite</li>
+<li><code>work/notebooks/capstone.ipynb</code>: the paper&rsquo;s skeleton and artifacts</li>
+</ul>
+<p>The notebooks load the data from the public warehouse with a Hugging Face token stored as a Colab secret named <code>HF_TOKEN</code>. Random seeds are fixed (42). Charts in this paper are drawn from the numbers the notebooks print.</p>
+
+<h2 id="ack">8. Acknowledgments &amp; data credit</h2>
+<p>Built on the FlyRank ML Internship dataset &mdash; <a href="https://flyrank.ai" target="_blank" rel="noopener">https://flyrank.ai</a>. Thanks to the FlyRank internship team for the data and the research paper that framed the questions.</p>
+</main>
+</body>
+</html>
